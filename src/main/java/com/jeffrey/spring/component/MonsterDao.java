@@ -1,6 +1,7 @@
 package com.jeffrey.spring.component;
 
 import com.jeffrey.spring.Annotation.Component;
+import com.jeffrey.spring.Annotation.Scope;
 
 
 /**

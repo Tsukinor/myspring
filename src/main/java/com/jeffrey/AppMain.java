@@ -11,7 +11,7 @@ import com.jeffrey.spring.ioc.SpringConfig;
  **/
 public class AppMain {
     public static void main(String[] args) {
-        SpringApplicationP ioc =
-                new SpringApplicationP(SpringConfig.class);
+        SpringApplicationP ioc = new SpringApplicationP(SpringConfig.class);
+        System.out.println("ok");
     }
 }
