@@ -10,6 +10,6 @@ import com.jeffrey.spring.Annotation.Scope;
  * @create: 2024-04-17 15:07
  * @description:
  **/
-@Component
+@Component(value = "monsterDao")
 public class MonsterDao {
 }

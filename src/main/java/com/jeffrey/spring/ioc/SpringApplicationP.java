@@ -7,6 +7,7 @@ import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Enumeration;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -26,12 +27,31 @@ public class SpringApplicationP {
     public ConcurrentHashMap<String,Object> singletonObjects =
             new ConcurrentHashMap<>();
     public SpringApplicationP(Class target_config){
-        beanDefinitionScan(target_config);
+        //完成扫描指定包
+        beanDefinitionByScan(target_config);
+
+        //通过beanDefinitionMap，初始化singletonObjects 单例池
+        //封装成方法
+        Enumeration<String> keys = beanDefinitionMap.keys();
+        while(keys.hasMoreElements()){
+            //获取beanName
+            String beanName = keys.nextElement();
+            //通过 beanName 得到对应的 BeanDefinition 对象
+            BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
+            //判断该bean是 singleton ，还是 prototype
+            if ("singleton".equalsIgnoreCase(beanDefinition.getScope())){
+                //将该bean实例放入到单例池
+                Object bean = createBean(beanDefinition);
+                singletonObjects.put(beanName,bean);
+            }
+        }
+
+        System.out.println("单例池---=" + singletonObjects);
         System.out.println(beanDefinitionMap);
     }
 
     //该方法完成对指定包的扫描，并将Bean信息封装到BeanDefinitionMap中
-    public void beanDefinitionScan(Class target_config){
+    public void beanDefinitionByScan(Class target_config){
 
         this.target_config = target_config;
 
@@ -105,5 +125,35 @@ public class SpringApplicationP {
             }
 
         }
+    }
+    //完成createBean(BeanDefinition beanDefinition)方法，先简单实现
+    private Object createBean(BeanDefinition beanDefinition){
+        //得到Bean的class对象
+        Class clazz = beanDefinition.getClazz();
+        try {
+            //通过反射创建实例
+            Object instance = clazz.newInstance();
+            return instance;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    //编辑方法返回对容器中的对象
+    public Object getBean(String beanName){
+
+        //判断要获取的bean 是否 在beanDefinitionMap中
+       if(beanDefinitionMap.containsKey(beanName)) {
+           BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
+           //如果是单例就从单例池中返回实例
+           if ("singleton".equalsIgnoreCase(beanDefinition.getScope())) {
+               Object instance = singletonObjects.get(beanName);
+               return instance;
+           } else {
+               return createBean(beanDefinition);
+           }
+       }
+       throw new NullPointerException("没有该bean");
     }
 }
