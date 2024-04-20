@@ -1,11 +1,13 @@
 package com.jeffrey.spring.ioc;
 
+import com.jeffrey.spring.Annotation.Autowired;
 import com.jeffrey.spring.Annotation.Component;
 import com.jeffrey.spring.Annotation.ComponentScan;
 import com.jeffrey.spring.Annotation.Scope;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.concurrent.ConcurrentHashMap;
@@ -130,9 +132,24 @@ public class SpringApplicationP {
     private Object createBean(BeanDefinition beanDefinition){
         //得到Bean的class对象
         Class clazz = beanDefinition.getClazz();
+
         try {
-            //通过反射创建实例
             Object instance = clazz.newInstance();
+            //遍历当前要创建对象的所有字段
+            for (Field field : clazz.getDeclaredFields()){
+                //判断这个字段是否有Autowired注解
+                if (field.isAnnotationPresent(Autowired.class)){
+                    //得到该字段名字
+                    String name = field.getName();
+                    //通过getBean 获取对象
+                    Object bean = getBean(name);
+                    //因为是私有属性，需要暴力破解
+                    field.setAccessible(true);
+                    // 为该实例进行组装
+                    field.set(instance,bean);
+          }
+       }
+            //通过反射创建实例
             return instance;
         } catch (Exception e) {
             throw new RuntimeException(e);

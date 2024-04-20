@@ -12,4 +12,8 @@ import com.jeffrey.spring.Annotation.Scope;
  **/
 @Component(value = "monsterDao")
 public class MonsterDao {
+
+    public void hi(){
+        System.out.println("MonsterDao --- hi() ");
+    }
 }
