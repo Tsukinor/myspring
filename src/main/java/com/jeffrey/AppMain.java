@@ -1,6 +1,7 @@
 package com.jeffrey;
 
 import com.jeffrey.spring.component.MonsterService;
+import com.jeffrey.spring.component.SmartAnimalable;
 import com.jeffrey.spring.ioc.SpringApplicationP;
 import com.jeffrey.spring.ioc.SpringConfig;
 
@@ -25,7 +26,12 @@ public class AppMain {
 //        System.out.println(xxx4);
 //        System.out.println("ok");
 
-        MonsterService monsterService = (MonsterService)ioc.getBean("monsterService");
+        MonsterService monsterService = (MonsterService)ioc.getBean("car");
         monsterService.m1();
+//        SmartAnimalable smartDog = (SmartAnimalable)ioc.getBean("smartDog");
+//        System.out.println(smartDog.getClass());
+//        smartDog.getSum(2, 3);
+//        smartDog.getSub(2, 3);
+
     }
 }

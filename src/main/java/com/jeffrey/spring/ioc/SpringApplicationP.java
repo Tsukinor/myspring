@@ -4,12 +4,17 @@ import com.jeffrey.spring.Annotation.Autowired;
 import com.jeffrey.spring.Annotation.Component;
 import com.jeffrey.spring.Annotation.ComponentScan;
 import com.jeffrey.spring.Annotation.Scope;
+import com.jeffrey.spring.component.Car;
+import com.jeffrey.spring.processor.BeanPostProcessor;
+import com.jeffrey.spring.processor.InitializingBean;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -28,6 +33,12 @@ public class SpringApplicationP {
     //定义singletonObjects --》 存放 单例对象
     public ConcurrentHashMap<String,Object> singletonObjects =
             new ConcurrentHashMap<>();
+
+    //定义一个属性ArrayList 存放 后置处理器
+    private List<BeanPostProcessor> beanPostProcessorList =
+            new ArrayList<>();
+
+
     public SpringApplicationP(Class target_config){
         //完成扫描指定包
         beanDefinitionByScan(target_config);
@@ -43,7 +54,7 @@ public class SpringApplicationP {
             //判断该bean是 singleton ，还是 prototype
             if ("singleton".equalsIgnoreCase(beanDefinition.getScope())){
                 //将该bean实例放入到单例池
-                Object bean = createBean(beanDefinition);
+                Object bean = createBean(beanName,beanDefinition);
                 singletonObjects.put(beanName,bean);
             }
         }
@@ -51,6 +62,7 @@ public class SpringApplicationP {
         System.out.println("单例池---=" + singletonObjects);
         System.out.println(beanDefinitionMap);
     }
+
 
     //该方法完成对指定包的扫描，并将Bean信息封装到BeanDefinitionMap中
     public void beanDefinitionByScan(Class target_config){
@@ -89,6 +101,26 @@ public class SpringApplicationP {
                         if (aClass.isAnnotationPresent(Component.class)){
                             //如果是该注解，就进行反射，得到对象后加载到容器中
                             System.out.println("是一个bean ------" + aClass);
+
+                            //1. 为了方便，这里将后置处理器放入到一个ArrayList
+                            //2. 如果发现是一个后置处理器, 放入到 beanPostProcessorList
+                            //3. 在原生的Spring容器中, 对后置处理器还是走的getBean, createBean
+                            //   , 但是需要我们在singletonObjects 加入相应的业务逻辑
+                            //4. 因为这里我们是为了理解后置处理去的机制，简化
+
+
+                            //判断当前的这个clazz有没有实现BeanPostProcessor
+                            //说明, 这里不能使用 instanceof 来判断clazz是否实现了BeanPostProcessor
+                            //原因: clazz不是一个实例对象，而是一个类对象/clazz, 使用isAssignableFrom
+                            if (BeanPostProcessor.class.isAssignableFrom(aClass)){
+                                BeanPostProcessor beanPostProcessor =
+                                        (BeanPostProcessor)aClass.newInstance();
+                                //放入到beanPostProcessorList
+                                beanPostProcessorList.add(beanPostProcessor);
+                                continue;//不放入单例池
+                            }
+
+
                             //1.得到Component 的value信息  如果没有就用类名作为name
                             Component componentAnnotation = aClass.getDeclaredAnnotation(Component.class);
                             String beanName = null;
@@ -129,7 +161,7 @@ public class SpringApplicationP {
         }
     }
     //完成createBean(BeanDefinition beanDefinition)方法，先简单实现
-    private Object createBean(BeanDefinition beanDefinition){
+    private Object createBean(String beanName,BeanDefinition beanDefinition){
         //得到Bean的class对象
         Class clazz = beanDefinition.getClazz();
 
@@ -149,6 +181,33 @@ public class SpringApplicationP {
                     field.set(instance,bean);
           }
        }
+            System.out.println("创建好bean ------" + instance);
+            //后置处理器是对容器中创建的所有的bean对象进行处理，可以对多个对象编程
+            //我们在bean的初始化方法前 调用后置处理器的before方法
+            if (instance instanceof Car){
+                System.out.println("这是一个car对象们可以进行处理");
+            }
+            for (BeanPostProcessor beanPostProcessor :beanPostProcessorList) {
+                Object o = beanPostProcessor.postProcessBeforeInitialization(instance, beanName);
+            }
+
+            //这里判断是否要执行bean的初始化方法
+            //判断当前创建的bean对象是否实现了 InitializingBean 接口
+            if (instance instanceof InitializingBean){
+                //将instance转成 InitializingBean 类型
+                ((InitializingBean)instance).afterPropertiesSet();
+            }
+
+            //我们在bean的初始化方法后 调用后置处理器的after方法
+            for (BeanPostProcessor beanPostProcessor :beanPostProcessorList) {
+                Object current = beanPostProcessor.postProcessAfterInitialization(instance,beanName);
+                if (current != null){
+                    instance = current;
+                }else {
+                    return instance;
+                }
+            }
+
             //通过反射创建实例
             return instance;
         } catch (Exception e) {
@@ -168,7 +227,7 @@ public class SpringApplicationP {
                Object instance = singletonObjects.get(beanName);
                return instance;
            } else {
-               return createBean(beanDefinition);
+               return createBean(beanName,beanDefinition);
            }
        }
        throw new NullPointerException("没有该bean");
