@@ -19,6 +19,15 @@ public class BeanPostProcessorP implements BeanPostProcessor {
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws Exception {
         System.out.println(" beanPostProcessorP 的前置处理器被调用 "  + beanName);
+
+        //这里请小伙伴一定要体会到，后置处理器是会容器的创建的bean生效
+        //，相当于是可以对多个对象编程， 切面编程
+        //日志，权限，身份, 事务.......
+        if (bean instanceof Car) {
+            System.out.println("这是一个Car对象, 我可以处理");
+            //((Car)bean)
+        }
+
         return bean;
     }
 
@@ -39,7 +48,7 @@ public class BeanPostProcessorP implements BeanPostProcessor {
                                 SmartAnimalAspect.showBeginLog();
                                 invoke = method.invoke(bean, args);//执行目标方法
                                 //进行返回通知的处理
-                                SmartAnimalAspect.showAfterLog();
+                                SmartAnimalAspect.showSuccessLog();
                             } else {
                                 invoke = method.invoke(bean, args);
                             }

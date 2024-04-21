@@ -26,10 +26,10 @@ public class AppMain {
 //        System.out.println(xxx4);
 //        System.out.println("ok");
 
-        MonsterService monsterService = (MonsterService)ioc.getBean("car");
-        monsterService.m1();
-//        SmartAnimalable smartDog = (SmartAnimalable)ioc.getBean("smartDog");
-//        System.out.println(smartDog.getClass());
+//        MonsterService monsterService = (MonsterService)ioc.getBean("monsterService");
+//        monsterService.m1();
+        SmartAnimalable smartDog = (SmartAnimalable)ioc.getBean("smartDog");
+        System.out.println(smartDog.getClass());
 //        smartDog.getSum(2, 3);
 //        smartDog.getSub(2, 3);
 
